@@ -1,17 +1,22 @@
 import streamlit as st
-from docx import Document
 import tempfile
 from lxml import etree
-from docling.document_converter import DocumentConverter
+import zipfile
+from docx import Document
 from models import ExtractA, ExtractB, ExtractC, ExtractD
 from utils import chunk_by_token
 
-# Lớp CustomDocumentConverter để sửa lỗi namespace
-class CustomDocumentConverter(DocumentConverter):
+
+# Lớp CustomDocumentConverter để xử lý file Word
+class CustomDocumentConverter:
     def convert(self, file_path):
+        """
+        Chuyển đổi file .docx thành nội dung văn bản bằng cách giải nén XML.
+        """
         try:
-            with open(file_path, "rb") as f:
-                xml_content = f.read()
+            # Đọc nội dung XML từ file .docx
+            with zipfile.ZipFile(file_path, 'r') as z:
+                xml_content = z.read('word/document.xml')
 
             # Parse nội dung XML
             root = etree.XML(xml_content)
@@ -25,14 +30,18 @@ class CustomDocumentConverter(DocumentConverter):
             elements = root.xpath(".//w:t", namespaces=namespaces)
             text = " ".join([el.text for el in elements if el.text])
 
-            # Trả về kết quả
             return text
+        except KeyError:
+            raise ValueError("File .docx không hợp lệ hoặc không chứa tài liệu Word!")
         except Exception as e:
-            raise ValueError(f"Lỗi xử lý namespace: {e}")
+            raise ValueError(f"Lỗi xử lý file Word: {e}")
 
 
-# Hàm xuất câu hỏi ra file Word
+# Hàm xuất danh sách câu hỏi ra file Word
 def export_to_word(questions):
+    """
+    Xuất danh sách câu hỏi ra file Word và trả về nội dung file.
+    """
     doc = Document()
     doc.add_heading("Danh sách câu hỏi", level=1)
 
@@ -51,7 +60,7 @@ def export_to_word(questions):
 
 
 # Giao diện Streamlit
-st.title("Trích xuất câu hỏi từ tài liệu .docx")
+st.title("Trích xuất câu hỏi từ tài liệu Word")
 
 # Tải file lên
 uploaded_file = st.file_uploader("Tải lên file .docx", type=["docx"])
@@ -59,7 +68,7 @@ uploaded_file = st.file_uploader("Tải lên file .docx", type=["docx"])
 if uploaded_file:
     with st.spinner("Đang xử lý tệp..."):
         try:
-            # Lưu file tạm thời
+            # Lưu file tạm
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 temp_file.write(uploaded_file.getbuffer())
                 temp_file_path = temp_file.name
@@ -73,16 +82,16 @@ if uploaded_file:
             st.success("File đã được xử lý thành công!")
 
             # Hiển thị các chunk
-            st.write("### Các phần văn bản đã được chia nhỏ:")
+            st.write("### Chọn chunk để xử lý:")
             selected_chunk = st.slider(
-                "Chọn phần văn bản (chunk) để trích xuất câu hỏi",
+                "Chọn chunk để trích xuất câu hỏi",
                 min_value=0,
                 max_value=len(chunks) - 1,
                 value=0
             )
-            st.text_area("Nội dung chunk:", chunks[selected_chunk], height=200)
+            st.text_area("Nội dung chunk đã chọn:", chunks[selected_chunk], height=200)
 
-            # Chọn mức độ câu hỏi để trích xuất
+            # Chọn mức độ câu hỏi
             extraction_levels = {
                 "Dễ": ExtractA,
                 "Thông hiểu": ExtractB,
@@ -126,4 +135,4 @@ if uploaded_file:
                         )
 
         except Exception as e:
-            st.error(f"Lỗi xử lý: {e}")
+            st.error(f"Lỗi: {e}")
