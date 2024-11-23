@@ -5,10 +5,11 @@ import json
 import streamlit as st
 
 
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# Access the OpenAI API key from the secrets
+api_key = st.secrets["OPENAI_API_KEY"]
 
-client = OpenAI()
-
+# Set up the OpenAI API client
+client = OpenAI(api_key=api_key)
 
 
 class QuizSample(BaseModel):
