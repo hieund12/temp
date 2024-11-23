@@ -6,7 +6,6 @@ import streamlit as st
 
 
 # Access the OpenAI API key from the secrets
-os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
 api_key = st.secrets["OPENAI_API_KEY"]
 
 # Set up the OpenAI API client
