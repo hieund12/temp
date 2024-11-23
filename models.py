@@ -1,12 +1,11 @@
 from pydantic import BaseModel
 from utils import clean_text
 from openai import OpenAI
-from dotenv import load_dotenv
 import json
 import streamlit as st
 
 
-load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI()
 
 
